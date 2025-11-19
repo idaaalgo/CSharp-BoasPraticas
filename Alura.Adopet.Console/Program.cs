@@ -1,13 +1,13 @@
-﻿using System.Net.Http.Headers;
+﻿using Alura.Adopet.Console;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Alura.Adopet.Console;
 
 // na linha abaixo cria-se uma instância de HttpClient para consumir API Adopet.
+HttpClient client = ConfiguraHttpClient("http://localhost:5057");
 Console.ForegroundColor = ConsoleColor.Green;
 try
 {
     string comando = args[0].Trim();
-    string caminhoDoArquivoDeImportacao = args[1];
     switch (comando)
     {
         case "import":
@@ -15,14 +15,12 @@ try
             await import.ImportacaoArquivoPetAsync(caminhoDoArquivoDeImportacao: args[1]);
             break;
         case "help":
-            // se não passou mais nenhum argumento mostra help de todos os comandos
             var help = new Help();
             help.ExibeDocumentacao(args);
             break;
         case "show":
-            string caminhoDoArquivoASerExibido = args[1];
             var show = new Show();
-            show.ExibeConteudoArquivo(caminhoDoArquivoASerExibido);
+            show.ExibeConteudoArquivo(caminhoDoArquivoASerExibido: args[1]);
             break;
         case "list":
             var list = new List();
@@ -43,4 +41,27 @@ catch (Exception ex)
 finally
 {
     Console.ForegroundColor = ConsoleColor.White;
+}
+
+HttpClient ConfiguraHttpClient(string url)
+{
+    HttpClient _client = new HttpClient();
+    _client.DefaultRequestHeaders.Accept.Clear();
+    _client.DefaultRequestHeaders.Accept.Add(
+        new MediaTypeWithQualityHeaderValue("application/json"));
+    _client.BaseAddress = new Uri(url);
+    return _client;
+}
+Task<HttpResponseMessage> CreatePetAsync(Pet pet)
+{
+    HttpResponseMessage? response = null;
+    using (response = new HttpResponseMessage())
+    {
+        return client.PostAsJsonAsync("pet/add", pet);
+    }
+}
+async Task<IEnumerable<Pet>?> ListPetsAsync()
+{
+    HttpResponseMessage response = await client.GetAsync("pet/list");
+    return await response.Content.ReadFromJsonAsync<IEnumerable<Pet>>();
 }
